@@ -1,9 +1,13 @@
 package sn.unchk.gestiontransfert.service;
 
-import sn.unchk.gestiontransfert.model.UtilisateurModel;
-
-import java.util.Optional;
+import sn.unchk.gestiontransfert.service.dto.response.ProfilUtilisateurDTO;
 
 public interface UtilisateurService {
-    Optional<UtilisateurModel> getUserProfile(String telephone);
+
+    /**
+     * Récupère le profil de l’utilisateur connecté à partir du JWT.
+     *
+     * @return ProfilUtilisateurDTO contenant les informations de l’utilisateur
+     */
+    ProfilUtilisateurDTO getProfilUtilisateurConnecte();
 }

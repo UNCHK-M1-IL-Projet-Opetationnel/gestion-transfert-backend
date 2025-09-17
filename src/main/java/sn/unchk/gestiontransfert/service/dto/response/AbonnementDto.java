@@ -1,33 +1,21 @@
-package sn.unchk.gestiontransfert.model;
+package sn.unchk.gestiontransfert.service.dto.response;
 
-import jakarta.persistence.*;
 import sn.unchk.gestiontransfert.model.enumeration.TypeAbonnement;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Entity
-@Table(name = "abonnement")
-public class AbonnementModel extends AbstractModel {
-
-    @Enumerated(EnumType.STRING)
+public class AbonnementDto {
+    private Integer id;
     private TypeAbonnement type;
-
-    @Column(precision = 10, scale = 2)
     private BigDecimal cout;
-
-    @Lob
-    @Column(columnDefinition = "TEXT")
     private String avantages;
-
     private LocalDate dateDebut;
     private LocalDate dateFin;
 
-    @ManyToOne
-    @JoinColumn(name = "utilisateur_id")
-    private UtilisateurModel utilisateur;
-
     // Getters
+    public Integer getId() {
+        return id;
+    }
     public TypeAbonnement getType() {
         return type;
     }
@@ -43,11 +31,11 @@ public class AbonnementModel extends AbstractModel {
     public LocalDate getDateFin() {
         return dateFin;
     }
-    public UtilisateurModel getUtilisateur() {
-        return utilisateur;
-    }
 
     // Setters
+    public void setId(Integer id) {
+        this.id = id;
+    }
     public void setType(TypeAbonnement type) {
         this.type = type;
     }
@@ -62,8 +50,5 @@ public class AbonnementModel extends AbstractModel {
     }
     public void setDateFin(LocalDate dateFin) {
         this.dateFin = dateFin;
-    }
-    public void setUtilisateur(UtilisateurModel utilisateur) {
-        this.utilisateur = utilisateur;
     }
 }

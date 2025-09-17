@@ -36,7 +36,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
 
         // ✅ Ignorer signup et login
-        if (path.startsWith("/auth/signup") || path.startsWith("/auth/login")) {
+        if (path.startsWith("/auth/") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/swagger-ui") ||
+                path.startsWith("/webjars/") || path.startsWith("/auth/signup") || path.startsWith("/auth/login")) {
             filterChain.doFilter(request, response);
             return;
         }
