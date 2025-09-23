@@ -9,7 +9,9 @@ import sn.unchk.gestiontransfert.model.AbonnementModel;
 import sn.unchk.gestiontransfert.model.UtilisateurModel;
 import sn.unchk.gestiontransfert.model.enumeration.TypeAbonnement;
 import sn.unchk.gestiontransfert.repository.AbonnementRepository;
+import sn.unchk.gestiontransfert.repository.UtilisateurRepository;
 import sn.unchk.gestiontransfert.service.AbonnementService;
+import sn.unchk.gestiontransfert.service.dto.response.AbonnementDto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,69 +20,89 @@ import java.time.LocalDate;
 public class AbonnementServiceImpl implements AbonnementService {
 
     private final AbonnementRepository abonnementRepository;
+    private final UtilisateurRepository utilisateurRepository;
 
-    public AbonnementServiceImpl(AbonnementRepository abonnementRepository) {
+    public AbonnementServiceImpl(AbonnementRepository abonnementRepository, UtilisateurRepository utilisateurRepository) {
         this.abonnementRepository = abonnementRepository;
+        this.utilisateurRepository = utilisateurRepository;
+    }
+
+    private AbonnementDto toDto(AbonnementModel abonnement) {
+        AbonnementDto dto = new AbonnementDto();
+        dto.setId(abonnement.getId());
+        dto.setType(abonnement.getType());
+        dto.setCout(abonnement.getCout());
+        dto.setAvantages(abonnement.getAvantages());
+        dto.setDateDebut(abonnement.getDateDebut());
+        dto.setDateFin(abonnement.getDateFin());
+        return dto;
     }
 
     @Override
-    public AbonnementModel activerAbonnement(UtilisateurModel utilisateur, TypeAbonnement type) {
+    public AbonnementDto activerAbonnement(UtilisateurModel utilisateur, TypeAbonnement type) {
         AbonnementModel abonnement = new AbonnementModel();
         abonnement.setUtilisateur(utilisateur);
         abonnement.setType(type);
         abonnement.setDateDebut(LocalDate.now());
 
+        BigDecimal cout;
         switch (type) {
-            case GRATUIT -> {
-                abonnement.setCout(BigDecimal.ZERO);
-                abonnement.setDateFin(LocalDate.now().plusMonths(1));
-                abonnement.setAvantages("Accès limité aux services de base (frais normaux 1%)");
-            }
             case STANDARD -> {
-                abonnement.setCout(BigDecimal.valueOf(1000));
+                cout = BigDecimal.valueOf(1000);
                 abonnement.setDateFin(LocalDate.now().plusMonths(1));
                 abonnement.setAvantages("Frais de transfert réduits à 0.8%");
             }
             case PREMIUM -> {
-                abonnement.setCout(BigDecimal.valueOf(2000));
+                cout = BigDecimal.valueOf(2000);
                 abonnement.setDateFin(LocalDate.now().plusMonths(1));
                 abonnement.setAvantages("Frais de transfert réduits à 0.5%");
             }
             case VIP -> {
-                abonnement.setCout(BigDecimal.valueOf(3000));
+                cout = BigDecimal.valueOf(3000);
                 abonnement.setDateFin(LocalDate.now().plusMonths(1));
                 abonnement.setAvantages("Frais de transfert réduits à 0.2%");
             }
+            default -> throw new IllegalArgumentException("Type d’abonnement inconnu : " + type);
         }
 
-        return abonnementRepository.save(abonnement);
+        if (utilisateur.getSolde().compareTo(cout) < 0) {
+            throw new RuntimeException("Solde insuffisant pour activer l’abonnement " + type);
+        }
+
+        utilisateur.setSolde(utilisateur.getSolde().subtract(cout));
+        utilisateurRepository.save(utilisateur);
+        abonnement.setCout(cout);
+
+        AbonnementModel saved = abonnementRepository.save(abonnement);
+        return toDto(saved);
     }
 
     @Override
-    public Page<AbonnementModel> getAllAbonnements(Pageable pageable) {
+    public Page<AbonnementDto> getAllAbonnements(Pageable pageable) {
         Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "updatedAt"));
-        return abonnementRepository.findAll(sorted);
+        return abonnementRepository.findAll(sorted).map(this::toDto);
     }
 
     @Override
-    public Page<AbonnementModel> getAbonnementsActifs(Pageable pageable) {
+    public Page<AbonnementDto> getAbonnementsActifs(Pageable pageable) {
         Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "updatedAt"));
-        return abonnementRepository.findByDateFinAfter(LocalDate.now(), sorted);
+        return abonnementRepository.findByDateFinAfter(LocalDate.now(), sorted).map(this::toDto);
     }
 
     @Override
-    public Page<AbonnementModel> getAbonnementsActifsByUtilisateur(UtilisateurModel utilisateur, Pageable pageable) {
+    public Page<AbonnementDto> getAbonnementsActifsByUtilisateur(UtilisateurModel utilisateur, Pageable pageable) {
         Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "updatedAt"));
-        return abonnementRepository.findByUtilisateurAndDateFinAfter(utilisateur, LocalDate.now(), sorted);
+        return abonnementRepository.findByUtilisateurAndDateFinAfter(utilisateur, LocalDate.now(), sorted)
+                .map(this::toDto);
     }
 
     @Override
-    public AbonnementModel getAbonnementById(Long id) {
-        return abonnementRepository.findById(id)
+    public AbonnementDto getAbonnementById(Long id) {
+        AbonnementModel abonnement = abonnementRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Abonnement non trouvé avec l’ID : " + id));
+        return toDto(abonnement);
     }
-
 }

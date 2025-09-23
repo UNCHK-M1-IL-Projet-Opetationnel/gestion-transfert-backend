@@ -1,5 +1,6 @@
 package sn.unchk.gestiontransfert.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import lombok.Data;
@@ -91,12 +92,15 @@ public class UtilisateurModel extends AbstractModel implements UserDetails {
     private Statut statut = Statut.ACTIF;
 
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<AbonnementModel> abonnements;
 
     @OneToMany(mappedBy = "expediteur", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<TransactionModel> transactionsEnvoyees;
 
     @OneToMany(mappedBy = "destinataire", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<TransactionModel> transactionsRecues;
 
     public String getNom() {
