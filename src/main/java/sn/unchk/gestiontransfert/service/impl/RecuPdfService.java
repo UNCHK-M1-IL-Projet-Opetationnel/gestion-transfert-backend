@@ -1,88 +1,47 @@
 package sn.unchk.gestiontransfert.service.impl;
 
 import com.lowagie.text.*;
-import com.lowagie.text.Font;
-import com.lowagie.text.Rectangle;
-import com.lowagie.text.pdf.PdfPCell;
-import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
-import org.springframework.stereotype.Service;
 import sn.unchk.gestiontransfert.service.dto.response.TransactionDto;
-
-import java.awt.*;
+import org.springframework.stereotype.Service;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.time.format.DateTimeFormatter;
+import java.awt.Color;
+
 
 @Service
 public class RecuPdfService {
 
-    public byte[] genererRecu(TransactionDto transaction) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Document document = new Document(PageSize.A5); // format ticket
+    public ByteArrayInputStream generatePdf(TransactionDto transaction) {
+        Document document = new Document(PageSize.A4);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         try {
-            PdfWriter.getInstance(document, baos);
+            PdfWriter.getInstance(document, out);
             document.open();
 
-            // ==== En-tête ====
-            Paragraph header = new Paragraph("REÇU DE TRANSACTION",
-                    new Font(Font.HELVETICA, 16, Font.BOLD, Color.BLACK));
-            header.setAlignment(Element.ALIGN_CENTER);
-            document.add(header);
+            // Ajouter un titre en rouge
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, Color.RED);
+            Paragraph title = new Paragraph("Reçu de Transaction", titleFont);
+            title.setAlignment(Paragraph.ALIGN_CENTER);
+            document.add(title);
 
-            Paragraph separator = new Paragraph("--------------------------------------\n");
-            separator.setAlignment(Element.ALIGN_CENTER);
-            document.add(separator);
+            // Ajouter les détails de la transaction
+            Font contentFont = FontFactory.getFont(FontFactory.HELVETICA, 12, Color.BLACK);
+            document.add(new Paragraph("ID: " + transaction.getId(), contentFont));
+            document.add(new Paragraph("Type: " + transaction.getType(), contentFont));
+            document.add(new Paragraph("Montant: " + transaction.getMontant() + " FCFA", contentFont));
+            document.add(new Paragraph("Frais: " + transaction.getFrais() + " FCFA", contentFont));
+            document.add(new Paragraph("Date: " + transaction.getDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), contentFont));
+            document.add(new Paragraph("Expéditeur: " + transaction.getExpediteurTelephone(), contentFont));
+            document.add(new Paragraph("Destinataire: " + transaction.getDestinataireTelephone(), contentFont));
 
-            // ==== Tableau infos ====
-            PdfPTable table = new PdfPTable(2);
-            table.setWidthPercentage(100);
-            table.setSpacingBefore(10f);
-            table.setSpacingAfter(10f);
-            table.getDefaultCell().setBorder(Rectangle.NO_BORDER);
-
-            addRow(table, "ID Transaction", String.valueOf(transaction.getId()));
-            addRow(table, "Type", String.valueOf(transaction.getType()));
-            addRow(table, "Montant", transaction.getMontant() + " FCFA");
-            addRow(table, "Frais", transaction.getFrais() + " FCFA");
-            addRow(table, "Date", transaction.getDate().toString());
-
-            if (transaction.getExpediteurTelephone() != null) {
-                addRow(table, "Expéditeur", transaction.getExpediteurTelephone());
-            }
-            if (transaction.getDestinataireTelephone() != null) {
-                addRow(table, "Destinataire", transaction.getDestinataireTelephone());
-            }
-
-            document.add(table);
-
-            // ==== Footer ====
-            Paragraph footerSep = new Paragraph("--------------------------------------\n");
-            footerSep.setAlignment(Element.ALIGN_CENTER);
-            document.add(footerSep);
-
-            Paragraph footer = new Paragraph("Merci d’avoir utilisé notre service.",
-                    new Font(Font.HELVETICA, 10, Font.ITALIC, Color.DARK_GRAY));
-            footer.setAlignment(Element.ALIGN_CENTER);
-            document.add(footer);
-
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la génération du PDF", e);
-        } finally {
             document.close();
+        } catch (DocumentException e) {
+            throw new RuntimeException("Erreur lors de la génération du PDF", e);
         }
 
-        return baos.toByteArray();
-    }
-
-    // 🔹 Méthode utilitaire pour ajouter une ligne clé/valeur
-    private void addRow(PdfPTable table, String label, String value) {
-        PdfPCell cell1 = new PdfPCell(new Phrase(label, new Font(Font.HELVETICA, 11, Font.BOLD)));
-        PdfPCell cell2 = new PdfPCell(new Phrase(value, new Font(Font.HELVETICA, 11)));
-
-        cell1.setBorder(Rectangle.NO_BORDER);
-        cell2.setBorder(Rectangle.NO_BORDER);
-
-        table.addCell(cell1);
-        table.addCell(cell2);
+        return new ByteArrayInputStream(out.toByteArray());
     }
 }

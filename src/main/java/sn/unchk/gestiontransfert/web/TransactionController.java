@@ -12,6 +12,7 @@ import sn.unchk.gestiontransfert.service.impl.RecuPdfService;
 import sn.unchk.gestiontransfert.web.response.PageResponse;
 import sn.unchk.gestiontransfert.service.dto.response.TransactionDto;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 
 @RestController
@@ -106,23 +107,18 @@ public class TransactionController {
 //    }
 
     @GetMapping("/{id}/recu")
-    public ResponseEntity<byte[]> downloadRecu(@PathVariable Long id) {
+    public ResponseEntity<byte[]> getRecuPdf(@PathVariable Long id) {
         TransactionDto transaction = transactionService.getTransactionById(id);
-        if (transaction == null) {
-            throw new RuntimeException("Transaction introuvable");
-        }
-
-        byte[] pdfBytes = recuPdfService.genererRecu(transaction);
+        ByteArrayInputStream pdfStream = recuPdfService.generatePdf(transaction);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(
-                ContentDisposition.builder("attachment")
-                        .filename("recu_transaction_" + transaction.getId() + ".pdf")
-                        .build()
-        );
+        headers.add("Content-Disposition", "attachment; filename=recu_transaction_" + id + ".pdf");
 
-        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfStream.readAllBytes());
     }
 
 
